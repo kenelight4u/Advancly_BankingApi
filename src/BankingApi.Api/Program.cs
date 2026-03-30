@@ -225,7 +225,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "Banking API v1");
-        options.RoutePrefix = string.Empty; // Swagger at root "/"
+        options.RoutePrefix = string.Empty;
         options.DisplayRequestDuration();
         options.EnableDeepLinking();
     });
