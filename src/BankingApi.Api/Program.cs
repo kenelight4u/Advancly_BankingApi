@@ -172,23 +172,20 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter your JWT token. Example: Bearer {token}",
-        Reference = new OpenApiReference
-        {
-            Type = ReferenceType.SecurityScheme,
-            Id = JwtBearerDefaults.AuthenticationScheme
-        }
+        Description = "Enter your JWT token. Example: Bearer {token}"
     };
 
     options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, securityScheme);
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
     {
-        { securityScheme, Array.Empty<string>() }
+        {
+            new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme),
+            new List<string>()
+        }
     });
 
     // Swashbuckle filters for example request/response schemas
     options.ExampleFilters();
-    options.EnableAnnotations();
 
     // Group endpoints by controller tag
     options.TagActionsBy(api =>
