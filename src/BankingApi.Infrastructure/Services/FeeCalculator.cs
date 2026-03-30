@@ -2,15 +2,11 @@
 
 namespace BankingApi.Infrastructure.Services;
 
-// ── Domain model for a single fee tier ──────────────────────────────────────
-
 /// <summary>
 /// A single tier in the fee schedule.
 /// MaxAmount = null means "catch-all" (applies to any amount above the last explicit tier).
 /// </summary>
 public record FeeTier(decimal? MaxAmount, decimal Fee);
-
-// ── Interface ────────────────────────────────────────────────────────────────
 
 public interface IFeeCalculator
 {
@@ -21,8 +17,6 @@ public interface IFeeCalculator
     /// </summary>
     decimal Calculate(decimal amount);
 }
-
-// ── Implementation ───────────────────────────────────────────────────────────
 
 public class FeeCalculator : IFeeCalculator
 {
