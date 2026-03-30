@@ -75,7 +75,7 @@ public class GetTransactionHistoryHandlerTests
     {
         // Arrange
         await using var db = InMemoryDbHelper.CreateContext();
-        var (nglCredit, nglDebit) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
+        var (nglCredit, nglDebit, nglFee) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
             db, email: "s@test.com", accountNumber: "0000000003",
@@ -118,7 +118,7 @@ public class GetTransactionHistoryHandlerTests
     {
         // Arrange
         await using var db = InMemoryDbHelper.CreateContext();
-        var (nglCredit, nglDebit) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
+        var (nglCredit, nglDebit, nglFee) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
             db, email: "s@test.com", accountNumber: "0000000003",
@@ -162,7 +162,7 @@ public class GetTransactionHistoryHandlerTests
     {
         // Arrange
         await using var db = InMemoryDbHelper.CreateContext();
-        var (nglCredit, nglDebit) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
+        var (nglCredit, nglDebit, nglFee) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
             db, email: "s@test.com", accountNumber: "0000000003",
