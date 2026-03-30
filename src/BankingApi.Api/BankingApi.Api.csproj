@@ -7,11 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.25" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.6" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\BankingApi.Application\BankingApi.Application.csproj" />
     <ProjectReference Include="..\BankingApi.Infrastructure\BankingApi.Infrastructure.csproj" />
   </ItemGroup>

@@ -1,4 +1,3 @@
-using System.Text;
 using BankingApi.Application.Auth.Commands;
 using BankingApi.Application.Common.Behaviors;
 using BankingApi.Application.Common.Exceptions;
@@ -11,13 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Filters;
+using System.Text;
 using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 1. DATABASE — EF Core + Pomelo MySQL
-// ══════════════════════════════════════════════════════════════════════════════
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
@@ -36,10 +32,6 @@ builder.Services.AddDbContext<BankingDbContext>(options =>
             mysqlOptions.CommandTimeout(60);
         }));
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 2. INFRASTRUCTURE SERVICES
-// ══════════════════════════════════════════════════════════════════════════════
-
 // JWT token service
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
@@ -53,10 +45,6 @@ builder.Services.AddSingleton<IFeeCalculator, FeeCalculator>();
 
 // Database seeder
 builder.Services.AddScoped<DatabaseSeeder>();
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 3. FLUENTVALIDATION
-// ══════════════════════════════════════════════════════════════════════════════
 
 // Register all validators from the Application assembly
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserCommandValidator>(
@@ -78,10 +66,6 @@ builder.Host.UseWolverine(opts =>
     // Use inline (synchronous) message processing for HTTP-triggered commands
     opts.DefaultLocalQueue.UseDurableInbox();
 });
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 5. JWT AUTHENTICATION
-// ══════════════════════════════════════════════════════════════════════════════
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key is not configured.");
@@ -133,16 +117,8 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 6. GLOBAL EXCEPTION HANDLER
-// ══════════════════════════════════════════════════════════════════════════════
-
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 7. CONTROLLERS + SWAGGER
-// ══════════════════════════════════════════════════════════════════════════════
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -195,15 +171,7 @@ builder.Services.AddSwaggerGen(options =>
 // Register Swashbuckle example filters from this assembly
 builder.Services.AddSwaggerExamplesFromAssemblyOf<Program>();
 
-// ══════════════════════════════════════════════════════════════════════════════
-// BUILD
-// ══════════════════════════════════════════════════════════════════════════════
-
 var app = builder.Build();
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 8. SEED DATABASE (Development only)
-// ══════════════════════════════════════════════════════════════════════════════
 
 if (app.Environment.IsDevelopment())
 {
@@ -212,11 +180,6 @@ if (app.Environment.IsDevelopment())
     await seeder.SeedAsync();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// 9. MIDDLEWARE PIPELINE
-// ══════════════════════════════════════════════════════════════════════════════
-
-// Global exception handler must be first
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -225,7 +188,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "Banking API v1");
-        options.RoutePrefix = string.Empty;
+        options.RoutePrefix = "swagger";
         options.DisplayRequestDuration();
         options.EnableDeepLinking();
     });
@@ -237,6 +200,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 await app.RunAsync();
-
-// Expose Program class for WebApplicationFactory in integration tests
+/// <summary>
+/// Expose Program class for WebApplicationFactory in integration tests
+/// </summary>
 public partial class Program { }
