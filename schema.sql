@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS Accounts (
     AccountType     VARCHAR(20)   NOT NULL DEFAULT 'Customer'
                           COMMENT 'Customer | NGL',
     NglPoolType     VARCHAR(20)   NULL
-                          COMMENT 'Credit | Debit | NULL for customer accounts',
+                          COMMENT 'Credit | Debit | Fee | NULL for customer accounts',
     IsSystemAccount TINYINT(1)    NOT NULL DEFAULT 0
                           COMMENT '1 = NGL system account, hidden from customer APIs',
     CreatedAt       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
