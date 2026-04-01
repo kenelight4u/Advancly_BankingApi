@@ -32,7 +32,7 @@ public class FeeCalculator : IFeeCalculator
                 "Add a 'FeeSchedule' array to appsettings.json.");
 
         // Guarantee exactly one catch-all tier exists
-        var catchAlls = _tiers.Count(t => t.MaxAmount is null);
+        var catchAlls = _tiers.Count(t => t.MaxAmount is 0);
         if (catchAlls != 1)
             throw new InvalidOperationException(
                 $"FeeSchedule must contain exactly one catch-all tier " +
