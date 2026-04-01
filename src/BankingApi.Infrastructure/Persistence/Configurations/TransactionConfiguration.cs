@@ -20,8 +20,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
                .IsRequired()
                .HasMaxLength(50);
 
-        builder.HasIndex(t => t.Reference)
-                .IsUnique();  
+        builder.HasIndex(t => t.Reference);  
 
         builder.Property(t => t.SourceAccountNumber)
                .IsRequired()

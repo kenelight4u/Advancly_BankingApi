@@ -10,9 +10,9 @@ namespace BankingApi.Api.Controllers;
 /// <summary>
 /// Handles fund transfers and transaction history for authenticated users.
 /// </summary>
+[Authorize]
 [ApiController]
 [Route("api/transactions")]
-[Authorize]
 [Tags("Transactions")]
 [Produces("application/json")]
 public class TransactionController : ControllerBase
@@ -49,7 +49,7 @@ public class TransactionController : ControllerBase
         CancellationToken ct)
     {
         var senderId = GetUserIdFromClaims();
-
+        
         var command = new TransferFundsCommand(
             SenderId: senderId,
             DestAccountNumber: request.DestAccountNumber,
@@ -89,7 +89,7 @@ public class TransactionController : ControllerBase
         CancellationToken ct = default)
     {
         var userId = GetUserIdFromClaims();
-
+        
         var query = new GetTransactionHistoryQuery(
             UserId: userId,
             PageNumber: pageNumber,

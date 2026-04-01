@@ -10,9 +10,9 @@ namespace BankingApi.Api.Controllers;
 /// <summary>
 /// Manages the authenticated user's bank account profile.
 /// </summary>
+[Authorize]
 [ApiController]
 [Route("api/accounts")]
-[Authorize]
 [Tags("Accounts")]
 [Produces("application/json")]
 public class AccountController : ControllerBase
@@ -36,8 +36,8 @@ public class AccountController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetMyAccount(CancellationToken ct)
     {
-        var userId = GetUserIdFromClaims();
-
+        var userId = GetUserIdFromClaims(HttpContext);
+        
         var query = new GetAccountQuery(UserId: userId);
         var result = await _bus.InvokeAsync<GetAccountResult>(query, ct);
 
@@ -67,8 +67,8 @@ public class AccountController : ControllerBase
         [FromBody] UpdateAccountRequest request,
         CancellationToken ct)
     {
-        var userId = GetUserIdFromClaims();
-
+        var userId = GetUserIdFromClaims(HttpContext);
+        
         var command = new UpdateAccountCommand(
             UserId: userId,
             FirstName: request.FirstName,
@@ -89,10 +89,10 @@ public class AccountController : ControllerBase
     /// Throws 401 if the claim is missing or malformed — this should
     /// never happen on a properly [Authorize]-protected endpoint.
     /// </summary>
-    private Guid GetUserIdFromClaims()
+    private Guid GetUserIdFromClaims(HttpContext context)
     {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier)
-               ?? User.FindFirstValue("sub");
+        var sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+               ?? context.User.FindFirstValue("sub");
 
         if (sub is null || !Guid.TryParse(sub, out var userId))
             throw new Application.Common.Exceptions.UnauthorizedException(

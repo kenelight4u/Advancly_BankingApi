@@ -6,6 +6,7 @@ using BankingApi.Infrastructure.Seed;
 using BankingApi.Infrastructure.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -25,10 +26,6 @@ builder.Services.AddDbContext<BankingDbContext>(options =>
         ServerVersion.AutoDetect(connectionString),
         mysqlOptions =>
         {
-            mysqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorNumbersToAdd: null);
             mysqlOptions.CommandTimeout(60);
         }));
 
@@ -48,11 +45,7 @@ builder.Services.AddScoped<DatabaseSeeder>();
 
 // Register all validators from the Application assembly
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserCommandValidator>(
-    lifetime: ServiceLifetime.Scoped);
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 4. WOLVERINE CQRS
-// ══════════════════════════════════════════════════════════════════════════════
+    lifetime: ServiceLifetime.Transient);
 
 builder.Host.UseWolverine(opts =>
 {
@@ -67,10 +60,12 @@ builder.Host.UseWolverine(opts =>
     opts.DefaultLocalQueue.UseDurableInbox();
 });
 
-var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"]
     ?? throw new InvalidOperationException("Jwt:Issuer is not configured.");
+var jwtAudience = builder.Configuration["Jwt:Audience"]
+    ?? throw new InvalidOperationException("Jwt:Audience is not configured.");
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
 
 builder.Services
     .AddAuthentication(options =>
@@ -80,7 +75,7 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false; // set true in production
+        options.RequireHttpsMetadata = false;
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -89,27 +84,41 @@ builder.Services
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtIssuer,
-            ValidAudience = jwtIssuer,
+            ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(
-                                           Encoding.UTF8.GetBytes(jwtKey)),
-            ClockSkew = TimeSpan.Zero   // no grace period
+                Encoding.UTF8.GetBytes(jwtKey!)),
+            ClockSkew = TimeSpan.Zero
         };
 
         options.Events = new JwtBearerEvents
         {
+            OnAuthenticationFailed = context =>
+            {
+                // Log the exact failure reason
+                Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+                Console.WriteLine($"Token: {context.Request.Headers["Authorization"]}");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("Token validated successfully!");
+                return Task.CompletedTask;
+            },
             OnChallenge = context =>
             {
+                Console.WriteLine($"Challenge error: {context.Error}");
+                Console.WriteLine($"Challenge description: {context.ErrorDescription}");
                 context.HandleResponse();
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.ContentType = "application/problem+json";
                 var body = """
-                    {
-                      "type":   "https://tools.ietf.org/html/rfc7807",
-                      "title":  "Unauthorized",
-                      "status": 401,
-                      "detail": "A valid Bearer token is required."
-                    }
-                    """;
+            {
+              "type":   "https://tools.ietf.org/html/rfc7807",
+              "title":  "Unauthorized",
+              "status": 401,
+              "detail": "A valid Bearer token is required."
+            }
+            """;
                 return context.Response.WriteAsync(body);
             }
         };
@@ -141,27 +150,23 @@ builder.Services.AddSwaggerGen(options =>
         options.IncludeXmlComments(xmlPath);
 
     // JWT Bearer security definition — shows lock icon on protected endpoints
-    var securityScheme = new OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter your JWT token. Example: Bearer {token}"
-    };
+        Description = "Enter your JWT token here. Example: eyJhbGci..."
+    });
 
-    options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, securityScheme);
     options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme),
+            new OpenApiSecuritySchemeReference("Bearer"),
             new List<string>()
         }
     });
-
-    // Swashbuckle filters for example request/response schemas
-    options.ExampleFilters();
 
     // Group endpoints by controller tag
     options.TagActionsBy(api =>
@@ -180,7 +185,34 @@ if (app.Environment.IsDevelopment())
     await seeder.SeedAsync();
 }
 
-app.UseExceptionHandler();
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exception = context.Features
+            .Get<IExceptionHandlerFeature>()?.Error;
+
+        if (exception is BankingApi.Application.Common.Exceptions.ValidationException validationEx)
+        {
+            context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new
+            {
+                title = "Validation Failed",
+                status = 400,
+                errors = validationEx.Errors
+            });
+            return;
+        }
+
+        context.Response.StatusCode = 500;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            title = "Internal Server Error",
+            status = 500
+        });
+    });
+});
 
 if (app.Environment.IsDevelopment())
 {
@@ -191,10 +223,12 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = "swagger";
         options.DisplayRequestDuration();
         options.EnableDeepLinking();
+        options.EnablePersistAuthorization(); 
     });
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Wolverine;
 
 namespace BankingApi.Application.Common.Behaviors;
 
@@ -16,7 +17,7 @@ namespace BankingApi.Application.Common.Behaviors;
 ///   3. Runs all validators in parallel via ValidateAsync.
 ///   4. Collects all failures and throws ValidationException (422) if any exist.
 /// </summary>
-public class ValidationMiddleware
+public static class ValidationMiddleware
 {
     /// <summary>
     /// Wolverine discovers this method by convention:
@@ -26,33 +27,27 @@ public class ValidationMiddleware
     /// We use the overload that accepts a MessageContext and
     /// IServiceProvider so we can resolve validators lazily.
     /// </summary>
-    public static async Task Before<T>(
-        T message,
-        IServiceProvider services,
-        CancellationToken ct) where T : class
+    public static async Task Before(
+        IServiceScopeFactory scopeFactory,
+        Envelope envelope)
     {
-        // Resolve all validators registered for this message type
-        var validators = services
-            .GetServices<IValidator<T>>()
-            .ToList();
+        if (envelope.Message is null) return;
 
-        if (validators.Count == 0)
-            return; // No validators registered — pass through
+        var messageType = envelope.Message.GetType();
+        var validatorType = typeof(IValidator<>).MakeGenericType(messageType);
 
-        // Run all validators concurrently
-        var validationTasks = validators
-            .Select(v => v.ValidateAsync(message, ct));
+        using var scope = scopeFactory.CreateScope();
+        var validator = scope.ServiceProvider.GetService(validatorType);
 
-        var results = await Task.WhenAll(validationTasks);
+        if (validator is null) return;
 
-        // Collect every failure from every validator
-        var failures = results
-            .SelectMany(r => r.Errors)
-            .Where(f => f is not null)
-            .Select(f => (f.PropertyName, f.ErrorMessage))
-            .ToList();
+        var contextType = typeof(ValidationContext<>).MakeGenericType(messageType);
+        var validationContext = (IValidationContext)Activator
+            .CreateInstance(contextType, envelope.Message)!;
 
-        if (failures.Count > 0)
-            throw new Exceptions.ValidationException(failures);
+        var result = await ((IValidator)validator).ValidateAsync(validationContext);
+
+        if (!result.IsValid)
+            throw new Exceptions.ValidationException(result);
     }
 }

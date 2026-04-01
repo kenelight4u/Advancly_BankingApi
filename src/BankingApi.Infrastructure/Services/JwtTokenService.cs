@@ -17,6 +17,7 @@ public record TokenResult(string Token, DateTime ExpiresAt);
 public class JwtTokenService : IJwtTokenService
 {
     private readonly string _key;
+    private readonly string _audience;
     private readonly string _issuer;
     private readonly int _expiresInMinutes;
 
@@ -30,6 +31,8 @@ public class JwtTokenService : IJwtTokenService
                             ?? throw new InvalidOperationException("Jwt:Issuer is not configured.");
         _expiresInMinutes = int.Parse(section["ExpiresInMinutes"]
                             ?? throw new InvalidOperationException("Jwt:ExpiresInMinutes is not configured."));
+        _audience = section["Audience"]
+                            ?? throw new InvalidOperationException("Jwt:Audience is not configured.");
     }
 
     public TokenResult GenerateToken(User user)
@@ -49,7 +52,7 @@ public class JwtTokenService : IJwtTokenService
 
         var token = new JwtSecurityToken(
             issuer: _issuer,
-            audience: _issuer,
+            audience: _audience,
             claims: claims,
             notBefore: DateTime.UtcNow,
             expires: expiresAt,

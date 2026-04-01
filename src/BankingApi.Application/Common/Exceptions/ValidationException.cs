@@ -1,4 +1,6 @@
-﻿namespace BankingApi.Application.Common.Exceptions;
+﻿using FluentValidation.Results;
+
+namespace BankingApi.Application.Common.Exceptions;
 
 /// <summary>
 /// Thrown when a command or query fails FluentValidation rules,
@@ -14,6 +16,15 @@ public class ValidationException : Exception
     /// Value = one or more error messages for that field.
     /// </summary>
     public IDictionary<string, string[]> Errors { get; }
+
+    public ValidationException(ValidationResult result)
+    {
+        Errors = result.Errors
+            .GroupBy(e => e.PropertyName)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(e => e.ErrorMessage).ToArray());
+    }
 
     /// <summary>
     /// Single-message constructor — used for business-rule violations
