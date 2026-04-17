@@ -2,6 +2,7 @@
 using BankingApi.Domain.Enums;
 using BankingApi.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace BankingApi.Tests.Helpers;
 
@@ -16,6 +17,8 @@ public static class InMemoryDbHelper
     {
         var options = new DbContextOptionsBuilder<BankingDbContext>()
             .UseInMemoryDatabase(dbName ?? Guid.NewGuid().ToString())
+            .ConfigureWarnings(warnings =>
+                warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         return new BankingDbContext(options);

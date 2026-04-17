@@ -78,14 +78,14 @@ public class GetTransactionHistoryHandlerTests
         var (nglCredit, nglDebit, nglFee) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 500_000.00m);
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "r@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 0.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 0.00m);
         var (_, other) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Bob", email: "b@test.com",
-            accountNumber: "0000000005", bvn: "33333333333", balance: 0.00m);
+            accountNumber: "0000000006", bvn: "33333333333", balance: 0.00m);
 
         // Seed one transfer sender→recipient
         await SeedCompletedTransferAsync(db,
@@ -121,11 +121,11 @@ public class GetTransactionHistoryHandlerTests
         var (nglCredit, nglDebit, nglFee) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 500_000.00m);
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "r@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 0.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 0.00m);
 
         await SeedCompletedTransferAsync(db,
             sender.AccountNumber, recipient.AccountNumber,
@@ -165,11 +165,11 @@ public class GetTransactionHistoryHandlerTests
         var (nglCredit, nglDebit, nglFee) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 500_000.00m);
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "r@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 0.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 0.00m);
 
         // Seed 5 distinct transfers
         for (var i = 1; i <= 5; i++)
@@ -215,7 +215,7 @@ public class GetTransactionHistoryHandlerTests
         await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 50_000.00m);
 
         // No transactions seeded

@@ -32,12 +32,12 @@ public class TransferFundsHandlerTests
         await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "sender@test.com", accountNumber: "0000000003",
+            db, email: "sender@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 100_000.00m);
 
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "recipient@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 50_000.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 50_000.00m);
 
         var handler = new TransferFundsHandler(db, FixedFee(25.00m).Object);
         var command = new TransferFundsCommand(
@@ -70,11 +70,11 @@ public class TransferFundsHandlerTests
         await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 50_000.00m);
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "r@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 0.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 0.00m);
 
         var handler = new TransferFundsHandler(db, FixedFee(10.00m).Object);
         var command = new TransferFundsCommand(
@@ -97,18 +97,18 @@ public class TransferFundsHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ValidTransfer_FeeSettlesFromNglCreditToNglDebit()
+    public async Task Handle_ValidTransfer_FeeSettlesFromNglCreditToNglFee()
     {
         // Arrange
         await using var db = InMemoryDbHelper.CreateContext();
         var (nglCredit, nglDebit, nglFee) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 50_000.00m);
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "r@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 0.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 0.00m);
 
         const decimal fee = 25.00m;
         const decimal amount = 10_000.00m;
@@ -125,14 +125,17 @@ public class TransferFundsHandlerTests
             .FirstAsync(t => t.Type == TransactionType.FeeCapture);
 
         feeLeg.SourceAccountNumber.Should().Be(nglCredit.AccountNumber);
-        feeLeg.DestAccountNumber.Should().Be(nglDebit.AccountNumber);
+        feeLeg.DestAccountNumber.Should().Be(nglFee.AccountNumber);
         feeLeg.Amount.Should().Be(fee);
         feeLeg.Fee.Should().Be(0.00m);
         feeLeg.TotalDebited.Should().Be(fee);
 
-        // NGL Credit net balance: received (amount+fee), sent fee out → net = amount
+        // NGL Credit net balance: received (amount+fee), sent fee out -> net = amount
         var updatedCredit = await db.Accounts.FindAsync(nglCredit.Id);
-        updatedCredit!.Balance.Should().Be(amount); // 10000 stays as revenue
+        updatedCredit!.Balance.Should().Be(amount);
+
+        var updatedFee = await db.Accounts.FindAsync(nglFee.Id);
+        updatedFee!.Balance.Should().Be(fee);
     }
 
     [Fact]
@@ -143,11 +146,11 @@ public class TransferFundsHandlerTests
         var (_, nglDebit, nglFee) = await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 50_000.00m);
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "r@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 0.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 0.00m);
 
         const decimal amount = 5_000.00m;
         const decimal fee = 10.00m;
@@ -185,11 +188,11 @@ public class TransferFundsHandlerTests
         await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 100.00m);   // only ₦100
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "r@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 0.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 0.00m);
 
         var handler = new TransferFundsHandler(db, FixedFee(25.00m).Object);
         var command = new TransferFundsCommand(
@@ -211,7 +214,7 @@ public class TransferFundsHandlerTests
         await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 50_000.00m);
 
         var handler = new TransferFundsHandler(db, FixedFee(25.00m).Object);
@@ -237,7 +240,7 @@ public class TransferFundsHandlerTests
         await InMemoryDbHelper.SeedNglAccountsAsync(db);
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 50_000.00m);
 
         var handler = new TransferFundsHandler(db, FixedFee(10.00m).Object);
@@ -313,11 +316,11 @@ public class TransferFundsHandlerTests
         await db.SaveChangesAsync();
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 50_000.00m);
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "r@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 0.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 0.00m);
 
         var handler = new TransferFundsHandler(db, FixedFee(10.00m).Object);
         var command = new TransferFundsCommand(
@@ -366,11 +369,11 @@ public class TransferFundsHandlerTests
         await db.SaveChangesAsync();
 
         var (_, sender) = await InMemoryDbHelper.SeedCustomerAsync(
-            db, email: "s@test.com", accountNumber: "0000000003",
+            db, email: "s@test.com", accountNumber: "0000000004",
             bvn: "11111111111", balance: 50_000.00m);
         var (_, recipient) = await InMemoryDbHelper.SeedCustomerAsync(
             db, firstName: "Jane", email: "r@test.com",
-            accountNumber: "0000000004", bvn: "22222222222", balance: 0.00m);
+            accountNumber: "0000000005", bvn: "22222222222", balance: 0.00m);
 
         var handler = new TransferFundsHandler(db, FixedFee(10.00m).Object);
         var command = new TransferFundsCommand(

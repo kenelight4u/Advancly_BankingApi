@@ -70,7 +70,7 @@ public class RegisterUserHandlerTests
     {
         // Arrange
         await using var db = InMemoryDbHelper.CreateContext();
-        await InMemoryDbHelper.SeedNglAccountsAsync(db); // seeds 0000000001 + 0000000002
+        await InMemoryDbHelper.SeedNglAccountsAsync(db); // seeds 0000000001 + 0000000003
 
         var handler = new RegisterUserHandler(db,
             new Infrastructure.Services.AccountNumberGenerator(db));
@@ -78,8 +78,8 @@ public class RegisterUserHandlerTests
         // Act
         var result = await handler.Handle(ValidCommand(), CancellationToken.None);
 
-        // Assert — first customer account must be 0000000003
-        result.AccountNumber.Should().Be("0000000003");
+        // Assert — first customer account must follow the 3 NGL accounts
+        result.AccountNumber.Should().Be("0000000004");
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class RegisterUserHandlerTests
         await InMemoryDbHelper.SeedNglAccountsAsync(db);
         await InMemoryDbHelper.SeedCustomerAsync(
             db, email: "duplicate@test.com",
-            accountNumber: "0000000003", bvn: "11111111111");
+            accountNumber: "0000000004", bvn: "11111111111");
 
         var handler = new RegisterUserHandler(db,
             new Infrastructure.Services.AccountNumberGenerator(db));
@@ -122,8 +122,10 @@ public class RegisterUserHandlerTests
         var act = () => handler.Handle(command, CancellationToken.None);
 
         // Assert
-        await act.Should().ThrowAsync<ValidationException>()
-            .WithMessage("*email*");
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Should().ContainKey("email");
+        exception.Which.Errors["email"].Should()
+            .Contain(message => message.Contains("email address", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -134,7 +136,7 @@ public class RegisterUserHandlerTests
         await InMemoryDbHelper.SeedNglAccountsAsync(db);
         await InMemoryDbHelper.SeedCustomerAsync(
             db, email: "existing@test.com",
-            accountNumber: "0000000003", bvn: "12345678901");
+            accountNumber: "0000000004", bvn: "12345678901");
 
         var handler = new RegisterUserHandler(db,
             new Infrastructure.Services.AccountNumberGenerator(db));
@@ -145,7 +147,9 @@ public class RegisterUserHandlerTests
         var act = () => handler.Handle(command, CancellationToken.None);
 
         // Assert
-        await act.Should().ThrowAsync<ValidationException>()
-            .WithMessage("*BVN*");
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Should().ContainKey("bvn");
+        exception.Which.Errors["bvn"].Should()
+            .Contain(message => message.Contains("BVN", StringComparison.OrdinalIgnoreCase));
     }
 }

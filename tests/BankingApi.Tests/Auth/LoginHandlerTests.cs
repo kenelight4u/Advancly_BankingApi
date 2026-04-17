@@ -16,6 +16,7 @@ public class LoginHandlerTests
             {
                 ["Jwt:Key"] = "TestSuperSecretKeyForUnitTestsMustBe32Chars!!",
                 ["Jwt:Issuer"] = "BankingApiTest",
+                ["Jwt:Audience"] = "BankingApiUsers",
                 ["Jwt:ExpiresInMinutes"] = "60"
             })
             .Build();
