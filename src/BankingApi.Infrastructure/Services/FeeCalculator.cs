@@ -43,7 +43,7 @@ public class FeeCalculator : IFeeCalculator
     {
         // Ordered ascending: bounded tiers first (by MaxAmount), catch-all last
         var matched = _tiers
-            .Where(t => t.MaxAmount is null || amount <= t.MaxAmount)
+            .Where(t => t.MaxAmount is null || t.MaxAmount is 0M || amount <= t.MaxAmount)
             .OrderBy(t => t.MaxAmount ?? decimal.MaxValue)
             .FirstOrDefault();
 
